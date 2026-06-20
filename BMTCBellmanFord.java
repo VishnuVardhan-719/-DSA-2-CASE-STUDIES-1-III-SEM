@@ -1,69 +1,106 @@
-import java.util.*;
-
-class Edge {
-    int u, v, weight;
-
-    Edge(int u, int v, int weight) {
-        this.u = u;
-        this.v = v;
-        this.weight = weight;
-    }
-}
+// BMTC Bus Route Shortest Path using Bellman-Ford Algorithm
+// Case Study: Shortest path from Majestic (MJC) to all BMTC bus hubs
 
 public class BMTCBellmanFord {
 
-    static final int INF = Integer.MAX_VALUE;
+    // Edge class to store source, destination, and weight (travel time in minutes)
+    static class Edge {
+        String src, dest;
+        int weight;
 
-    static void bellmanFord(int n, List<Edge> edges, int source) {
-        int[] dist = new int[n];
+        Edge(String src, String dest, int weight) {
+            this.src = src;
+            this.dest = dest;
+            this.weight = weight;
+        }
+    }
 
-        Arrays.fill(dist, INF);
-        dist[source] = 0;
+    // Hub/vertex names
+    static String[] hubs = { "MJC", "KEM", "JAY", "KOR", "WHF", "HBR", "MRT" };
 
-        // V-1 iterations
-        for (int i = 1; i <= n - 1; i++) {
-            for (Edge e : edges) {
-                if (dist[e.u] != INF && dist[e.u] + e.weight < dist[e.v]) {
-                    dist[e.v] = dist[e.u] + e.weight;
+    // Number of vertices and edges
+    static int V = 7;
+    static int E = 11;
+
+    // Bellman-Ford Algorithm
+    static void bellmanFord(Edge[] edges, String source) {
+        int[] dist = new int[V];
+        final int INF = Integer.MAX_VALUE;
+
+        // Step 1: Initialize all distances to infinity, source = 0
+        for (int i = 0; i < V; i++) {
+            dist[i] = INF;
+        }
+        dist[getIndex(source)] = 0;
+
+        // Step 2: Relax all edges V-1 times
+        for (int i = 1; i <= V - 1; i++) {
+            for (Edge edge : edges) {
+                int u = getIndex(edge.src);
+                int v = getIndex(edge.dest);
+                int w = edge.weight;
+
+                if (dist[u] != INF && dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
                 }
             }
         }
 
-        // Negative cycle detection
-        for (Edge e : edges) {
-            if (dist[e.u] != INF && dist[e.u] + e.weight < dist[e.v]) {
+        // Step 3: Negative cycle detection (one extra relaxation pass)
+        for (Edge edge : edges) {
+            int u = getIndex(edge.src);
+            int v = getIndex(edge.dest);
+            int w = edge.weight;
+
+            if (dist[u] != INF && dist[u] + w < dist[v]) {
                 System.out.println("Negative cycle detected!");
                 return;
             }
         }
 
-        // Print shortest distances
-        String[] hubs = {"MJC", "KEM", "JAY", "KOR", "WHF", "HBR", "MRT"};
-
-        System.out.println("Shortest distance from MJC:");
-        for (int i = 0; i < n; i++) {
+        // Step 4: Display shortest distances from source hub
+        System.out.println("Shortest distance from " + source + ":");
+        for (int i = 0; i < V; i++) {
             System.out.println(hubs[i] + " -> " + dist[i]);
         }
     }
 
+    // Helper: Get index of a hub by name
+    static int getIndex(String hub) {
+        for (int i = 0; i < hubs.length; i++) {
+            if (hubs[i].equals(hub)) return i;
+        }
+        return -1;
+    }
+
     public static void main(String[] args) {
-        int V = 7;
-        List<Edge> edges = new ArrayList<>();
 
-        // Adding edges
-        edges.add(new Edge(0, 1, 8));   // MJC -> KEM
-        edges.add(new Edge(0, 2, 5));   // MJC -> JAY
-        edges.add(new Edge(0, 3, 12));  // MJC -> KOR
-        edges.add(new Edge(1, 5, 7));   // KEM -> HBR
-        edges.add(new Edge(1, 4, 10));  // KEM -> WHF
-        edges.add(new Edge(2, 3, 4));   // JAY -> KOR
-        edges.add(new Edge(3, 4, 6));   // KOR -> WHF
-        edges.add(new Edge(3, 6, 9));   // KOR -> MRT
-        edges.add(new Edge(4, 5, 3));   // WHF -> HBR
-        edges.add(new Edge(4, 6, -3));  // WHF -> MRT (negative edge)
-        edges.add(new Edge(5, 6, 11));  // HBR -> MRT
+        // 11 directed edges representing BMTC bus routes with travel times (in minutes)
+        // One negative edge: WHF -> MRT = -3 (express route / time saved during off-peak)
+        Edge[] edges = new Edge[E];
 
-        // Run Bellman-Ford from MJC (0)
-        bellmanFord(V, edges, 0);
+        // Routes from MJC (Majestic)
+        edges[0]  = new Edge("MJC", "KEM", 8);   // Majestic -> Kempegowda Bus Stand
+        edges[1]  = new Edge("MJC", "JAY", 5);   // Majestic -> Jayanagar
+        edges[2]  = new Edge("MJC", "KOR", 12);  // Majestic -> Koramangala
+
+        // Routes from KEM (Kempegowda)
+        edges[3]  = new Edge("KEM", "KOR", 4);   // Kempegowda -> Koramangala
+        edges[4]  = new Edge("KEM", "HBR", 7);   // Kempegowda -> Hebbal
+
+        // Routes from JAY (Jayanagar)
+        edges[5]  = new Edge("JAY", "KOR", 4);   // Jayanagar -> Koramangala
+        edges[6]  = new Edge("JAY", "WHF", 10);  // Jayanagar -> Whitefield
+
+        // Routes from KOR (Koramangala)
+        edges[7]  = new Edge("KOR", "WHF", 6);   // Koramangala -> Whitefield
+        edges[8]  = new Edge("KOR", "MRT", 3);   // Koramangala -> Marathahalli
+
+        // Routes from WHF (Whitefield)
+        edges[9]  = new Edge("WHF", "MRT", -3);  // Whitefield -> Marathahalli (negative: express)
+        edges[10] = new Edge("WHF", "HBR", 5);   // Whitefield -> Hebbal (surge penalty adjusted)
+
+        // Run Bellman-Ford from source hub: MJC (Majestic)
+        bellmanFord(edges, "MJC");
     }
 }
