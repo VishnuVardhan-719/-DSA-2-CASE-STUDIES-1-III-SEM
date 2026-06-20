@@ -1,69 +1,62 @@
-import java.util.*;
-
-class Delivery {
-    int over, ball;
-
-    Delivery(int over, int ball) {
-        this.over = over;
-        this.ball = ball;
-    }
-}
+// Cricket Scoring Service using Counting Sort
+// Sorts ball-by-ball delivery records using composite key (over, ball)
+// Uses LSD Radix style: first sort by ball number, then by over number
 
 public class CricketCountingSort {
 
-    // Stable counting sort by ball number
-    static Delivery[] countingSortByBall(Delivery[] in) {
-        int K = 12; // max ball number
-        int[] count = new int[K + 1];
+    // Delivery record holding over number and ball number
+    static class Delivery {
+        int over;
+        int ball;
 
-        // Count occurrences
-        for (Delivery d : in) {
-            count[d.ball]++;
+        Delivery(int over, int ball) {
+            this.over = over;
+            this.ball = ball;
         }
 
-        // Prefix sum
-        for (int i = 1; i <= K; i++) {
-            count[i] += count[i - 1];
+        @Override
+        public String toString() {
+            return "(" + over + "," + ball + ")";
         }
-
-        Delivery[] out = new Delivery[in.length];
-
-        // Reverse order for stability
-        for (int i = in.length - 1; i >= 0; i--) {
-            Delivery d = in[i];
-            out[--count[d.ball]] = d;
-        }
-
-        return out;
     }
 
-    // Stable counting sort by over number
-    static Delivery[] countingSortByOver(Delivery[] in) {
-        int K = 50; // max overs
-        int[] count = new int[K + 1];
+    // Stable Counting Sort on a specific key (0 = ball, 1 = over)
+    static Delivery[] countingSort(Delivery[] arr, int keyType, int maxVal) {
+        int n = arr.length;
+        int[] count = new int[maxVal + 1];
 
-        // Count occurrences
-        for (Delivery d : in) {
-            count[d.over]++;
+        // Count occurrences of each key
+        for (Delivery d : arr) {
+            int key = (keyType == 0) ? d.ball : d.over;
+            count[key]++;
         }
 
-        // Prefix sum
-        for (int i = 1; i <= K; i++) {
+        // Compute prefix sums (cumulative counts)
+        for (int i = 1; i <= maxVal; i++) {
             count[i] += count[i - 1];
         }
 
-        Delivery[] out = new Delivery[in.length];
-
-        // Reverse order for stability
-        for (int i = in.length - 1; i >= 0; i--) {
-            Delivery d = in[i];
-            out[--count[d.over]] = d;
+        // Build output array using reverse traversal for stability
+        Delivery[] output = new Delivery[n];
+        for (int i = n - 1; i >= 0; i--) {
+            int key = (keyType == 0) ? arr[i].ball : arr[i].over;
+            output[--count[key]] = arr[i];
         }
 
-        return out;
+        return output;
+    }
+
+    // Print deliveries in a formatted row
+    static void printDeliveries(Delivery[] arr) {
+        for (Delivery d : arr) {
+            System.out.print(d + " ");
+        }
+        System.out.println();
     }
 
     public static void main(String[] args) {
+
+        // 10 delivery records (over, ball)
         Delivery[] deliveries = {
             new Delivery(2, 4),
             new Delivery(1, 1),
@@ -78,19 +71,28 @@ public class CricketCountingSort {
         };
 
         System.out.println("Unsorted Deliveries:");
-        for (Delivery d : deliveries) {
-            System.out.print("(" + d.over + "," + d.ball + ") ");
-        }
+        printDeliveries(deliveries);
+        System.out.println();
 
-        // Step 1: Sort by ball
-        deliveries = countingSortByBall(deliveries);
+        int maxBall = 6;   // Maximum ball number per over
+        int maxOver = 3;   // Maximum over number
 
-        // Step 2: Sort by over
-        deliveries = countingSortByOver(deliveries);
+        // LSD Radix style:
+        // Pass 1: Sort by ball number (least significant key)
+        Delivery[] sortedByBall = countingSort(deliveries, 0, maxBall);
 
-        System.out.println("\n\nSorted Deliveries:");
-        for (Delivery d : deliveries) {
-            System.out.print("(" + d.over + "," + d.ball + ") ");
-        }
+        // Pass 2: Sort by over number (most significant key) — stable, preserves ball order
+        Delivery[] sortedFinal = countingSort(sortedByBall, 1, maxOver);
+
+        System.out.println("Sorted Deliveries:");
+        printDeliveries(sortedFinal);
+
+        System.out.println();
+        System.out.println("=== SLA Analysis ===");
+        System.out.println("Total Deliveries  = " + deliveries.length);
+        System.out.println("Number of Overs   = " + maxOver);
+        System.out.println("Maximum Ball No.  = " + maxBall);
+        System.out.println("Sorting Passes    = 2");
+        System.out.println("Time Complexity   = O(n + k) per pass = O(n + k) total");
     }
 }
